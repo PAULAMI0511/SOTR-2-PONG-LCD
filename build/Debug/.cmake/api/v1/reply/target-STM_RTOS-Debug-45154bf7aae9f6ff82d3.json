@@ -186,7 +186,15 @@
 				5,
 				6,
 				7,
-				8
+				8,
+				9,
+				10,
+				11,
+				12,
+				13,
+				14,
+				15,
+				16
 			]
 		},
 		{
@@ -282,7 +290,7 @@
 			"language" : "ASM",
 			"sourceIndexes" : 
 			[
-				9
+				17
 			]
 		}
 	],
@@ -409,14 +417,22 @@
 				5,
 				6,
 				7,
-				8
+				8,
+				9,
+				10,
+				11,
+				12,
+				13,
+				14,
+				15,
+				16
 			]
 		},
 		{
 			"name" : "",
 			"sourceIndexes" : 
 			[
-				9
+				17
 			]
 		}
 	],
@@ -510,6 +526,86 @@
 			],
 			"compileGroupIndex" : 0,
 			"path" : "Src/Mutex.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 10,
+			"backtraces" : 
+			[
+				10
+			],
+			"compileGroupIndex" : 0,
+			"path" : "Src/Semaphore.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 10,
+			"backtraces" : 
+			[
+				10
+			],
+			"compileGroupIndex" : 0,
+			"path" : "Src/Gpio.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 10,
+			"backtraces" : 
+			[
+				10
+			],
+			"compileGroupIndex" : 0,
+			"path" : "Src/I2c.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 10,
+			"backtraces" : 
+			[
+				10
+			],
+			"compileGroupIndex" : 0,
+			"path" : "Src/Ssd1306.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 10,
+			"backtraces" : 
+			[
+				10
+			],
+			"compileGroupIndex" : 0,
+			"path" : "Src/Adc.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 10,
+			"backtraces" : 
+			[
+				10
+			],
+			"compileGroupIndex" : 0,
+			"path" : "Src/Buzzer.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 10,
+			"backtraces" : 
+			[
+				10
+			],
+			"compileGroupIndex" : 0,
+			"path" : "Src/PongGame.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 10,
+			"backtraces" : 
+			[
+				10
+			],
+			"compileGroupIndex" : 0,
+			"path" : "Src/Pong.c",
 			"sourceGroupIndex" : 0
 		},
 		{

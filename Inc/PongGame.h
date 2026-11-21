@@ -9,16 +9,45 @@
 
 #include "AppTypes.h"
 
+/* --------- Pantalla usada --------- */
+/* 1 = LCD 16x2 (HD44780), 0 = OLED SSD1306 128x64 */
+#define PONG_DISPLAY_LCD 1
+
 /* --------- Configuracion del juego --------- */
-#define PONG_WIN_SCORE 5  /* puntos para ganar               */
-#define PONG_FIELD_TOP 10 /* debajo del marcador             */
+#define PONG_WIN_SCORE 5    /* puntos para ganar               */
+#define PONG_SERVE_STEPS 40 /* pausa antes de sacar (pasos)    */
+
+#if PONG_DISPLAY_LCD
+/* LCD 16x2: cada caracter es de 5x8 pixeles -> cancha de 80x16 pixeles */
+#define PONG_FIELD_WIDTH 80
+#define PONG_FIELD_TOP 0
+#define PONG_FIELD_BOTTOM 15
+#define PONG_PADDLE_HEIGHT 5
+#define PONG_PADDLE_WIDTH 1
+#define PONG_PADDLE1_X 0
+#define PONG_PADDLE2_X 79
+#define PONG_BALL_SIZE 2
+#define PONG_SPEED_X_START 10 /* 0.6 px por paso   */
+#define PONG_SPEED_X_MAX 24   /* 1.5 px por paso   */
+#define PONG_SPEED_X_STEP 1   /* aumento por golpe */
+#define PONG_SPEED_Y_MAX 14
+#define PONG_SPIN_FACTOR 4    /* angulo segun donde golpea la paleta */
+#else
+/* OLED 128x64 */
+#define PONG_FIELD_WIDTH 128
+#define PONG_FIELD_TOP 10 /* debajo del marcador */
 #define PONG_FIELD_BOTTOM 63
 #define PONG_PADDLE_HEIGHT 12
 #define PONG_PADDLE_WIDTH 2
 #define PONG_PADDLE1_X 2
 #define PONG_PADDLE2_X 124
 #define PONG_BALL_SIZE 3
-#define PONG_SERVE_STEPS 40 /* pausa antes de sacar (pasos)    */
+#define PONG_SPEED_X_START 24 /* 1.5 px por paso   */
+#define PONG_SPEED_X_MAX 56   /* 3.5 px por paso   */
+#define PONG_SPEED_X_STEP 3
+#define PONG_SPEED_Y_MAX 40
+#define PONG_SPIN_FACTOR 6
+#endif
 
 /* Las posiciones de la pelota se guardan en "punto fijo": valor * 16.
  * Asi se pueden manejar velocidades como 1.5 pixeles por paso sin usar

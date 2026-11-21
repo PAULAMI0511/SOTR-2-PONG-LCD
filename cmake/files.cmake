@@ -16,5 +16,7 @@ target_sources(${PROJECT_NAME} PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/Src/Buzzer.c"
     "${CMAKE_CURRENT_SOURCE_DIR}/Src/PongGame.c"
     "${CMAKE_CURRENT_SOURCE_DIR}/Src/Pong.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Src/Lcd1602.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Src/PongLcd.c"
     "${CMAKE_CURRENT_SOURCE_DIR}/Startup/startup_stm32f103xx.S"
 )

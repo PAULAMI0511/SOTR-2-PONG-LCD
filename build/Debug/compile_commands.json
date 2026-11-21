@@ -55,6 +55,54 @@
 },
 {
   "directory": "/home/paula/testcube/STM_RTOS/build/Debug",
+  "command": "/home/paula/.local/share/stm32cube/bundles/st-arm-clang/21.1.1+st.7/bin/starm-clang -DDEBUG -DRTE_DEVICE_STARTUP_STM32F1XX -I/home/paula/testcube/STM_RTOS/Inc -Wno-comment  --target=armv7m-st-none-eabi -mcpu=cortex-m3 -mfloat-abi=soft -mlittle-endian -mthumb -fstack-usage -std=gnu11 -Wall -Wextra -Wpedantic -Wno-unused-parameter -O0 -g3 -ggdb -o CMakeFiles/STM_RTOS.dir/Src/Semaphore.c.obj -c /home/paula/testcube/STM_RTOS/Src/Semaphore.c",
+  "file": "/home/paula/testcube/STM_RTOS/Src/Semaphore.c",
+  "output": "/home/paula/testcube/STM_RTOS/build/Debug/CMakeFiles/STM_RTOS.dir/Src/Semaphore.c.obj"
+},
+{
+  "directory": "/home/paula/testcube/STM_RTOS/build/Debug",
+  "command": "/home/paula/.local/share/stm32cube/bundles/st-arm-clang/21.1.1+st.7/bin/starm-clang -DDEBUG -DRTE_DEVICE_STARTUP_STM32F1XX -I/home/paula/testcube/STM_RTOS/Inc -Wno-comment  --target=armv7m-st-none-eabi -mcpu=cortex-m3 -mfloat-abi=soft -mlittle-endian -mthumb -fstack-usage -std=gnu11 -Wall -Wextra -Wpedantic -Wno-unused-parameter -O0 -g3 -ggdb -o CMakeFiles/STM_RTOS.dir/Src/Gpio.c.obj -c /home/paula/testcube/STM_RTOS/Src/Gpio.c",
+  "file": "/home/paula/testcube/STM_RTOS/Src/Gpio.c",
+  "output": "/home/paula/testcube/STM_RTOS/build/Debug/CMakeFiles/STM_RTOS.dir/Src/Gpio.c.obj"
+},
+{
+  "directory": "/home/paula/testcube/STM_RTOS/build/Debug",
+  "command": "/home/paula/.local/share/stm32cube/bundles/st-arm-clang/21.1.1+st.7/bin/starm-clang -DDEBUG -DRTE_DEVICE_STARTUP_STM32F1XX -I/home/paula/testcube/STM_RTOS/Inc -Wno-comment  --target=armv7m-st-none-eabi -mcpu=cortex-m3 -mfloat-abi=soft -mlittle-endian -mthumb -fstack-usage -std=gnu11 -Wall -Wextra -Wpedantic -Wno-unused-parameter -O0 -g3 -ggdb -o CMakeFiles/STM_RTOS.dir/Src/I2c.c.obj -c /home/paula/testcube/STM_RTOS/Src/I2c.c",
+  "file": "/home/paula/testcube/STM_RTOS/Src/I2c.c",
+  "output": "/home/paula/testcube/STM_RTOS/build/Debug/CMakeFiles/STM_RTOS.dir/Src/I2c.c.obj"
+},
+{
+  "directory": "/home/paula/testcube/STM_RTOS/build/Debug",
+  "command": "/home/paula/.local/share/stm32cube/bundles/st-arm-clang/21.1.1+st.7/bin/starm-clang -DDEBUG -DRTE_DEVICE_STARTUP_STM32F1XX -I/home/paula/testcube/STM_RTOS/Inc -Wno-comment  --target=armv7m-st-none-eabi -mcpu=cortex-m3 -mfloat-abi=soft -mlittle-endian -mthumb -fstack-usage -std=gnu11 -Wall -Wextra -Wpedantic -Wno-unused-parameter -O0 -g3 -ggdb -o CMakeFiles/STM_RTOS.dir/Src/Ssd1306.c.obj -c /home/paula/testcube/STM_RTOS/Src/Ssd1306.c",
+  "file": "/home/paula/testcube/STM_RTOS/Src/Ssd1306.c",
+  "output": "/home/paula/testcube/STM_RTOS/build/Debug/CMakeFiles/STM_RTOS.dir/Src/Ssd1306.c.obj"
+},
+{
+  "directory": "/home/paula/testcube/STM_RTOS/build/Debug",
+  "command": "/home/paula/.local/share/stm32cube/bundles/st-arm-clang/21.1.1+st.7/bin/starm-clang -DDEBUG -DRTE_DEVICE_STARTUP_STM32F1XX -I/home/paula/testcube/STM_RTOS/Inc -Wno-comment  --target=armv7m-st-none-eabi -mcpu=cortex-m3 -mfloat-abi=soft -mlittle-endian -mthumb -fstack-usage -std=gnu11 -Wall -Wextra -Wpedantic -Wno-unused-parameter -O0 -g3 -ggdb -o CMakeFiles/STM_RTOS.dir/Src/Adc.c.obj -c /home/paula/testcube/STM_RTOS/Src/Adc.c",
+  "file": "/home/paula/testcube/STM_RTOS/Src/Adc.c",
+  "output": "/home/paula/testcube/STM_RTOS/build/Debug/CMakeFiles/STM_RTOS.dir/Src/Adc.c.obj"
+},
+{
+  "directory": "/home/paula/testcube/STM_RTOS/build/Debug",
+  "command": "/home/paula/.local/share/stm32cube/bundles/st-arm-clang/21.1.1+st.7/bin/starm-clang -DDEBUG -DRTE_DEVICE_STARTUP_STM32F1XX -I/home/paula/testcube/STM_RTOS/Inc -Wno-comment  --target=armv7m-st-none-eabi -mcpu=cortex-m3 -mfloat-abi=soft -mlittle-endian -mthumb -fstack-usage -std=gnu11 -Wall -Wextra -Wpedantic -Wno-unused-parameter -O0 -g3 -ggdb -o CMakeFiles/STM_RTOS.dir/Src/Buzzer.c.obj -c /home/paula/testcube/STM_RTOS/Src/Buzzer.c",
+  "file": "/home/paula/testcube/STM_RTOS/Src/Buzzer.c",
+  "output": "/home/paula/testcube/STM_RTOS/build/Debug/CMakeFiles/STM_RTOS.dir/Src/Buzzer.c.obj"
+},
+{
+  "directory": "/home/paula/testcube/STM_RTOS/build/Debug",
+  "command": "/home/paula/.local/share/stm32cube/bundles/st-arm-clang/21.1.1+st.7/bin/starm-clang -DDEBUG -DRTE_DEVICE_STARTUP_STM32F1XX -I/home/paula/testcube/STM_RTOS/Inc -Wno-comment  --target=armv7m-st-none-eabi -mcpu=cortex-m3 -mfloat-abi=soft -mlittle-endian -mthumb -fstack-usage -std=gnu11 -Wall -Wextra -Wpedantic -Wno-unused-parameter -O0 -g3 -ggdb -o CMakeFiles/STM_RTOS.dir/Src/PongGame.c.obj -c /home/paula/testcube/STM_RTOS/Src/PongGame.c",
+  "file": "/home/paula/testcube/STM_RTOS/Src/PongGame.c",
+  "output": "/home/paula/testcube/STM_RTOS/build/Debug/CMakeFiles/STM_RTOS.dir/Src/PongGame.c.obj"
+},
+{
+  "directory": "/home/paula/testcube/STM_RTOS/build/Debug",
+  "command": "/home/paula/.local/share/stm32cube/bundles/st-arm-clang/21.1.1+st.7/bin/starm-clang -DDEBUG -DRTE_DEVICE_STARTUP_STM32F1XX -I/home/paula/testcube/STM_RTOS/Inc -Wno-comment  --target=armv7m-st-none-eabi -mcpu=cortex-m3 -mfloat-abi=soft -mlittle-endian -mthumb -fstack-usage -std=gnu11 -Wall -Wextra -Wpedantic -Wno-unused-parameter -O0 -g3 -ggdb -o CMakeFiles/STM_RTOS.dir/Src/Pong.c.obj -c /home/paula/testcube/STM_RTOS/Src/Pong.c",
+  "file": "/home/paula/testcube/STM_RTOS/Src/Pong.c",
+  "output": "/home/paula/testcube/STM_RTOS/build/Debug/CMakeFiles/STM_RTOS.dir/Src/Pong.c.obj"
+},
+{
+  "directory": "/home/paula/testcube/STM_RTOS/build/Debug",
   "command": "/home/paula/.local/share/stm32cube/bundles/st-arm-clang/21.1.1+st.7/bin/starm-clang -DDEBUG -DRTE_DEVICE_STARTUP_STM32F1XX -I/home/paula/testcube/STM_RTOS/Inc --target=armv7m-st-none-eabi -mcpu=cortex-m3 -mfloat-abi=soft -mlittle-endian -mthumb -fstack-usage -std=gnu11 -Wall -Wextra -Wpedantic -Wno-unused-parameter -O0 -g3 -ggdb -x assembler-with-cpp -MP -o CMakeFiles/STM_RTOS.dir/Startup/startup_stm32f103xx.S.obj -c /home/paula/testcube/STM_RTOS/Startup/startup_stm32f103xx.S",
   "file": "/home/paula/testcube/STM_RTOS/Startup/startup_stm32f103xx.S",
   "output": "/home/paula/testcube/STM_RTOS/build/Debug/CMakeFiles/STM_RTOS.dir/Startup/startup_stm32f103xx.S.obj"
