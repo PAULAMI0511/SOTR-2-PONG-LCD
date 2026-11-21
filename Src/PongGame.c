@@ -1,248 +1,236 @@
 /***********************************************************
- *  Pong.c - Tareas del juego PONG y su sincronizacion.
+ *  PongGame.c - Reglas y dibujo del juego PONG.
  ***********************************************************/
 
-#include "Pong.h"
-#include "Adc.h"
-#include "Buzzer.h"
-#include "Gpio.h"
 #include "PongGame.h"
-#include "RtosIncludes.h"
 #include "Ssd1306.h"
-#include "Lcd1602.h"
-#include "PongLcd.h"
+
+/* Las velocidades dependen de la pantalla: ver PongGame.h */
+#define BALL_SPEED_X_START PONG_SPEED_X_START
+#define BALL_SPEED_X_MAX PONG_SPEED_X_MAX
+#define BALL_SPEED_X_STEP PONG_SPEED_X_STEP
+#define BALL_SPEED_Y_MAX PONG_SPEED_Y_MAX
 
 /***********************************************************
- *                    DEFINICIONES                          *
+ *                  FUNCIONES PRIVADAS                      *
  ***********************************************************/
 
-#define BUTTON_PORT GPIOB_BASE
-#define BUTTON_PIN 0
-#define POT1_CHANNEL 0 /* PA0 */
-#define POT2_CHANNEL 1 /* PA1 */
-
-#define INPUT_PERIOD_MS 20
-#define GAME_PERIOD_MS 25
-#define DISPLAY_PERIOD_MS 30
-
-#define SOUND_STACK_SIZE 384
-#define INPUT_STACK_SIZE 384
-#define GAME_STACK_SIZE 384
-#define DISPLAY_STACK_SIZE 512
-
-/***********************************************************
- *              VARIABLES COMPARTIDAS                       *
- ***********************************************************/
-
-/* Estado del juego: lo leen y escriben 3 tareas -> protegido por mutex */
-static PongGame_t Game;
-static Mutex_t GameMutex;
-
-/* Aviso de sonido: el juego "da" el semaforo y la tarea de sonido lo
- * "toma". PendingSound dice que sonido toca. */
-static Semaphore_t SoundSem;
-static volatile PongSound_t PendingSound = PONG_SOUND_NONE;
-
-/***********************************************************
- *                 PILAS Y TCB DE LAS TAREAS                *
- ***********************************************************/
-
-static u8 SoundStack[SOUND_STACK_SIZE] __attribute__((aligned(8)));
-static u8 InputStack[INPUT_STACK_SIZE] __attribute__((aligned(8)));
-static u8 GameStack[GAME_STACK_SIZE] __attribute__((aligned(8)));
-static u8 DisplayStack[DISPLAY_STACK_SIZE] __attribute__((aligned(8)));
-
-static TCB_t SoundTcb;
-static TCB_t InputTcb;
-static TCB_t GameTcb;
-static TCB_t DisplayTcb;
-
-/***********************************************************
- *                 FUNCIONES PRIVADAS                       *
- ***********************************************************/
-
-static void TaskSound(void);
-static void TaskInput(void);
-static void TaskGame(void);
-static void TaskDisplay(void);
-
-/* Pide un sonido a la tarea de sonido (no bloquea a quien lo pide) */
-static void Pong_RequestSound(PongSound_t Sound) {
-  if (Sound != PONG_SOUND_NONE) {
-    PendingSound = Sound;
-    Semaphore_Give(&SoundSem);
-  }
+/* Generador de numeros pseudoaleatorios simple (congruencial lineal) */
+static u32 PongGame_Random(PongGame_t *Game) {
+  Game->Seed = Game->Seed * 1103515245U + 12345U;
+  return (Game->Seed >> 16) & 0x7FFF;
 }
 
-/* Promedio de varias lecturas para que la paleta no "tiemble" */
-static u16 Pong_ReadPot(u8 Channel) {
-  u32 Sum = 0;
-  for (u8 i = 0; i < 4; i++) {
-    Sum += Adc_Read(Channel);
-  }
-  return (u16)(Sum / 4);
+static s16 Abs16(s16 v) { return (v < 0) ? (s16)-v : v; }
+
+/* Pone la pelota en el centro, lista para salir hacia Direction (+1 / -1) */
+static void PongGame_ResetBall(PongGame_t *Game, s8 Direction) {
+  Game->BallX = ((PONG_FIELD_WIDTH - PONG_BALL_SIZE) / 2) * PONG_FP;
+  Game->BallY =
+      ((PONG_FIELD_TOP + PONG_FIELD_BOTTOM - PONG_BALL_SIZE) / 2) * PONG_FP;
+  Game->VelX = (s16)(Direction * BALL_SPEED_X_START);
+  Game->VelY = (s16)((s32)(PongGame_Random(Game) % 33) - 16); /* -1..+1 px */
+  Game->ServeWait = PONG_SERVE_STEPS;
 }
 
-static void Pong_Beep(u32 OnMs, u32 OffMs, u8 Times) {
-  for (u8 i = 0; i < Times; i++) {
-    Buzzer_On();
-    Task_Delay(OnMs);
-    Buzzer_Off();
-    if (OffMs > 0) {
-      Task_Delay(OffMs);
-    }
-  }
+/* Convierte la lectura del potenciometro (0..4095) en la posicion de la
+ * paleta dentro de la cancha */
+static s16 PongGame_AdcToPaddle(u16 Adc) {
+  s32 Range = PONG_FIELD_BOTTOM - PONG_FIELD_TOP + 1 - PONG_PADDLE_HEIGHT;
+  return (s16)(PONG_FIELD_TOP + ((s32)Adc * Range) / 4096);
 }
 
-/***********************************************************
- *                 FUNCIONES PUBLICAS                       *
- ***********************************************************/
+/* Revisa si la pelota choca con una paleta. Devuelve TRUE si reboto. */
+static u8 PongGame_HitPaddle(PongGame_t *Game, s16 PaddleY) {
+  s16 BallY = (s16)(Game->BallY / PONG_FP);
+  if (BallY + PONG_BALL_SIZE <= PaddleY ||
+      BallY >= PaddleY + PONG_PADDLE_HEIGHT) {
+    return FALSE;
+  }
+  /* El angulo depende de donde golpea: en el centro sale recta,
+   * en los bordes sale mas inclinada */
+  s16 Offset =
+      (s16)((BallY + PONG_BALL_SIZE / 2) - (PaddleY + PONG_PADDLE_HEIGHT / 2));
+  s16 VelY = (s16)(Offset * PONG_SPIN_FACTOR);
+  if (VelY > BALL_SPEED_Y_MAX) {
+    VelY = BALL_SPEED_Y_MAX;
+  } else if (VelY < -BALL_SPEED_Y_MAX) {
+    VelY = -BALL_SPEED_Y_MAX;
+  }
+  Game->VelY = VelY;
 
-/*!
- * @brief  Inicializa perifericos, mutex, semaforo y crea las 4 tareas.
- *         Se llama desde main despues de Rtos_Init().
- */
-void Pong_Init(void) {
-  /* Perifericos (la OLED se inicializa en su propia tarea) */
-  Adc_Init();
-  Buzzer_Init();
-  Gpio_EnablePort(BUTTON_PORT);
-  Gpio_Config(BUTTON_PORT, BUTTON_PIN, GPIO_MODE_INPUT_PULL);
-  Gpio_Write(BUTTON_PORT, BUTTON_PIN, TRUE); /* activa el pull-up */
+  /* Invertir la direccion y acelerar un poco */
+  s16 Speed = Abs16(Game->VelX) + BALL_SPEED_X_STEP;
+  if (Speed > BALL_SPEED_X_MAX) {
+    Speed = BALL_SPEED_X_MAX;
+  }
+  Game->VelX = (Game->VelX < 0) ? Speed : (s16)-Speed;
+  return TRUE;
+}
 
-  /* Sincronizacion */
-  Mutex_Init(&GameMutex);
-  Semaphore_Init(&SoundSem, 0, 1); /* semaforo binario, empieza "vacio" */
+/* Suma un punto. Devuelve el sonido correspondiente. */
+static PongSound_t PongGame_Score(PongGame_t *Game, u8 Player) {
+  if (Player == 1) {
+    Game->Score1++;
+  } else {
+    Game->Score2++;
+  }
+  if (Game->Score1 >= PONG_WIN_SCORE || Game->Score2 >= PONG_WIN_SCORE) {
+    Game->Winner = Player;
+    Game->State = PONG_STATE_GAME_OVER;
+    return PONG_SOUND_WIN;
+  }
+  /* Saca hacia el jugador que perdio el punto */
+  PongGame_ResetBall(Game, (Player == 1) ? 1 : -1);
+  return PONG_SOUND_POINT;
+}
 
-  PongGame_Init(&Game);
-
-  /* Tareas (numero menor = mayor prioridad) */
-  Task_Create(&SoundTcb, TaskSound, 0, SoundStack, SOUND_STACK_SIZE, "Sound");
-  Task_Create(&InputTcb, TaskInput, 1, InputStack, INPUT_STACK_SIZE, "Input");
-  Task_Create(&GameTcb, TaskGame, 2, GameStack, GAME_STACK_SIZE, "Game");
-  Task_Create(&DisplayTcb, TaskDisplay, 3, DisplayStack, DISPLAY_STACK_SIZE,
-              "Display");
+static void PongGame_DrawCentered(s16 y, const char *Text, u8 Scale) {
+  Ssd1306_DrawString((s16)((128 - Ssd1306_StringWidth(Text, Scale)) / 2), y,
+                     Text, Scale);
 }
 
 /***********************************************************
- *                        TAREAS                            *
+ *                  FUNCIONES PUBLICAS                      *
  ***********************************************************/
 
-/*!
- * @brief  Duerme en el semaforo hasta que haya un sonido que reproducir.
- *         Mientras espera NO consume CPU (esta bloqueada).
- */
-static void TaskSound(void) {
-  for (;;) {
-    Semaphore_Take(&SoundSem);
-    PongSound_t Sound = PendingSound;
-    PendingSound = PONG_SOUND_NONE;
+void PongGame_Init(PongGame_t *Game) {
+  Game->State = PONG_STATE_MENU;
+  Game->Score1 = 0;
+  Game->Score2 = 0;
+  Game->Winner = 0;
+  Game->Seed = 0x1234;
+  Game->Paddle1Y =
+      (PONG_FIELD_TOP + PONG_FIELD_BOTTOM - PONG_PADDLE_HEIGHT) / 2;
+  Game->Paddle2Y = Game->Paddle1Y;
+  PongGame_ResetBall(Game, 1);
+}
 
-    switch (Sound) {
-    case PONG_SOUND_WALL:
-      Pong_Beep(15, 0, 1);
-      break;
-    case PONG_SOUND_PADDLE:
-      Pong_Beep(35, 0, 1);
-      break;
-    case PONG_SOUND_POINT:
-      Pong_Beep(80, 60, 2);
-      break;
-    case PONG_SOUND_START:
-      Pong_Beep(60, 50, 3);
-      break;
-    case PONG_SOUND_WIN:
-      Pong_Beep(400, 0, 1);
-      break;
-    default:
-      break;
-    }
-  }
+void PongGame_SetPaddles(PongGame_t *Game, u16 Adc1, u16 Adc2) {
+  Game->Paddle1Y = PongGame_AdcToPaddle(Adc1);
+  Game->Paddle2Y = PongGame_AdcToPaddle(Adc2);
+  /* el movimiento de los jugadores tambien "revuelve" la semilla */
+  Game->Seed += (u32)Adc1 + ((u32)Adc2 << 12);
 }
 
 /*!
- * @brief  Lee los potenciometros y el boton de inicio/fin.
- *         El boton se "filtra" (antirrebote): solo cuenta si se lee
- *         presionado dos veces seguidas, y solo en el flanco de bajada.
+ * @brief  Boton de inicio/fin:
+ *         - en el menu o al terminar: empieza una partida nueva.
+ *         - durante la partida: la termina y vuelve al menu.
  */
-static void TaskInput(void) {
-  u8 LastStable = FALSE;
-  u8 LastRead = FALSE;
-  for (;;) {
-    u16 Pot1 = Pong_ReadPot(POT1_CHANNEL);
-    u16 Pot2 = Pong_ReadPot(POT2_CHANNEL);
-
-    /* Con pull-up: presionado = 0 */
-    u8 Pressed = (Gpio_Read(BUTTON_PORT, BUTTON_PIN) == FALSE);
-    u8 NewPress = FALSE;
-    if (Pressed == LastRead && Pressed != LastStable) {
-      LastStable = Pressed;
-      NewPress = Pressed;
-    }
-    LastRead = Pressed;
-
-    PongSound_t Sound = PONG_SOUND_NONE;
-    Mutex_Take(&GameMutex);
-    PongGame_SetPaddles(&Game, Pot1, Pot2);
-    if (NewPress) {
-      Sound = PongGame_StartPressed(&Game);
-    }
-    Mutex_Release(&GameMutex);
-
-    Pong_RequestSound(Sound);
-    Task_Delay(INPUT_PERIOD_MS);
+PongSound_t PongGame_StartPressed(PongGame_t *Game) {
+  if (Game->State == PONG_STATE_PLAYING) {
+    Game->State = PONG_STATE_MENU;
+    return PONG_SOUND_WIN;
   }
+  Game->Score1 = 0;
+  Game->Score2 = 0;
+  Game->Winner = 0;
+  Game->State = PONG_STATE_PLAYING;
+  PongGame_ResetBall(Game, (PongGame_Random(Game) & 1) ? 1 : -1);
+  return PONG_SOUND_START;
 }
 
 /*!
- * @brief  Avanza la fisica del juego a ritmo constante.
+ * @brief  Avanza el juego un paso: mueve la pelota y revisa choques.
+ * @retval Sonido que se debe reproducir (o PONG_SOUND_NONE).
  */
-static void TaskGame(void) {
-  for (;;) {
-    Mutex_Take(&GameMutex);
-    PongSound_t Sound = PongGame_Step(&Game);
-    Mutex_Release(&GameMutex);
-
-    Pong_RequestSound(Sound);
-    Task_Delay(GAME_PERIOD_MS);
+PongSound_t PongGame_Step(PongGame_t *Game) {
+  if (Game->State != PONG_STATE_PLAYING) {
+    return PONG_SOUND_NONE;
   }
+  if (Game->ServeWait > 0) {
+    Game->ServeWait--;
+    return PONG_SOUND_NONE;
+  }
+
+  PongSound_t Sound = PONG_SOUND_NONE;
+  Game->BallX += Game->VelX;
+  Game->BallY += Game->VelY;
+
+  /* Rebote en la pared de arriba y la de abajo */
+  s32 Top = PONG_FIELD_TOP * PONG_FP;
+  s32 Bottom = (PONG_FIELD_BOTTOM + 1 - PONG_BALL_SIZE) * PONG_FP;
+  if (Game->BallY < Top) {
+    Game->BallY = Top + (Top - Game->BallY);
+    Game->VelY = (s16)-Game->VelY;
+    Sound = PONG_SOUND_WALL;
+  } else if (Game->BallY > Bottom) {
+    Game->BallY = Bottom - (Game->BallY - Bottom);
+    Game->VelY = (s16)-Game->VelY;
+    Sound = PONG_SOUND_WALL;
+  }
+
+  s16 BallX = (s16)(Game->BallX / PONG_FP);
+
+  /* Paleta del jugador 1 (izquierda) */
+  if (Game->VelX < 0 && BallX <= PONG_PADDLE1_X + PONG_PADDLE_WIDTH &&
+      BallX + PONG_BALL_SIZE > PONG_PADDLE1_X) {
+    if (PongGame_HitPaddle(Game, Game->Paddle1Y)) {
+      Game->BallX = (PONG_PADDLE1_X + PONG_PADDLE_WIDTH) * PONG_FP;
+      Sound = PONG_SOUND_PADDLE;
+    }
+  }
+  /* Paleta del jugador 2 (derecha) */
+  if (Game->VelX > 0 && BallX + PONG_BALL_SIZE >= PONG_PADDLE2_X &&
+      BallX < PONG_PADDLE2_X + PONG_PADDLE_WIDTH) {
+    if (PongGame_HitPaddle(Game, Game->Paddle2Y)) {
+      Game->BallX = (PONG_PADDLE2_X - PONG_BALL_SIZE) * PONG_FP;
+      Sound = PONG_SOUND_PADDLE;
+    }
+  }
+
+  /* La pelota salio de la cancha: punto para el otro jugador */
+  if (Game->BallX < 0) {
+    Sound = PongGame_Score(Game, 2);
+  } else if (Game->BallX > (PONG_FIELD_WIDTH - PONG_BALL_SIZE) * PONG_FP) {
+    Sound = PongGame_Score(Game, 1);
+  }
+  return Sound;
 }
 
 /*!
- * @brief  Copia el estado (con el mutex tomado el menor tiempo posible),
- *         dibuja y envia la imagen por I2C.
+ * @brief  Dibuja el estado del juego en el framebuffer de la pantalla.
  */
-static void TaskDisplay(void) {
-#if PONG_DISPLAY_LCD
-  /* ---------------- LCD 16x2 ---------------- */
-  Lcd_Init();
-  for (;;) {
-    PongGame_t Snapshot;
-    Mutex_Take(&GameMutex);
-    Snapshot = Game;
-    Mutex_Release(&GameMutex);
+void PongGame_Draw(const PongGame_t *Game) {
+  Ssd1306_Clear();
 
-    PongLcd_Draw(&Snapshot);
-    Task_Delay(DISPLAY_PERIOD_MS);
-  }
-#else
-  /* ---------------- OLED SSD1306 ---------------- */
-  Task_Delay(100); /* la OLED necesita un momento despues de encender */
-  while (Ssd1306_Init() != 0) {
-    Task_Delay(500); /* si no responde, reintentar */
+  if (Game->State == PONG_STATE_MENU) {
+    PongGame_DrawCentered(8, "PONG", 3);
+    PongGame_DrawCentered(38, "PRESIONE", 1);
+    PongGame_DrawCentered(48, "INICIO", 1);
+    return;
   }
 
-  for (;;) {
-    PongGame_t Snapshot;
-    Mutex_Take(&GameMutex);
-    Snapshot = Game;
-    Mutex_Release(&GameMutex);
-
-    PongGame_Draw(&Snapshot);
-    if (Ssd1306_Update() != 0) {
-      Ssd1306_Init(); /* error de comunicacion: reiniciar la pantalla */
-    }
-    Task_Delay(DISPLAY_PERIOD_MS);
+  if (Game->State == PONG_STATE_GAME_OVER) {
+    PongGame_DrawCentered(4, "FIN DEL JUEGO", 1);
+    PongGame_DrawCentered(18, (Game->Winner == 1) ? "GANA J1" : "GANA J2", 2);
+    char Score[] = {(char)('0' + Game->Score1), ' ', '-', ' ',
+                    (char)('0' + Game->Score2), '\0'};
+    PongGame_DrawCentered(38, Score, 1);
+    PongGame_DrawCentered(52, "PRESIONE INICIO", 1);
+    return;
   }
-#endif
+
+  /* Marcador */
+  char S1[] = {(char)('0' + Game->Score1), '\0'};
+  char S2[] = {(char)('0' + Game->Score2), '\0'};
+  Ssd1306_DrawString(46, 1, S1, 1);
+  Ssd1306_DrawString(78, 1, S2, 1);
+  Ssd1306_DrawString(4, 1, "J1", 1);
+  Ssd1306_DrawString(113, 1, "J2", 1);
+
+  /* Linea superior de la cancha y red punteada en el centro */
+  Ssd1306_FillRect(0, PONG_FIELD_TOP - 1, 128, 1, TRUE);
+  for (s16 y = PONG_FIELD_TOP + 1; y <= PONG_FIELD_BOTTOM; y += 4) {
+    Ssd1306_FillRect(63, y, 1, 2, TRUE);
+  }
+
+  /* Paletas y pelota */
+  Ssd1306_FillRect(PONG_PADDLE1_X, Game->Paddle1Y, PONG_PADDLE_WIDTH,
+                   PONG_PADDLE_HEIGHT, TRUE);
+  Ssd1306_FillRect(PONG_PADDLE2_X, Game->Paddle2Y, PONG_PADDLE_WIDTH,
+                   PONG_PADDLE_HEIGHT, TRUE);
+  Ssd1306_FillRect((s16)(Game->BallX / PONG_FP), (s16)(Game->BallY / PONG_FP),
+                   PONG_BALL_SIZE, PONG_BALL_SIZE, TRUE);
 }
