@@ -31,7 +31,7 @@
 #define PONG_SPEED_X_MAX 24   /* 1.5 px por paso   */
 #define PONG_SPEED_X_STEP 1   /* aumento por golpe */
 #define PONG_SPEED_Y_MAX 14
-#define PONG_SPIN_FACTOR 4    /* angulo segun donde golpea la paleta */
+#define PONG_SPIN_FACTOR 4 /* angulo segun donde golpea la paleta */
 #else
 /* OLED 128x64 */
 #define PONG_FIELD_WIDTH 128

@@ -1,32 +1,31 @@
-#ifndef _LCD1602_H_
-#define _LCD1602_H_
+#ifndef _PONG_H_
+#define _PONG_H_
 
 /***********************************************************
- *  Driver de la pantalla LCD 16x2 (controlador HD44780)
- *  en modo de 4 bits.
+ *  Aplicacion PONG sobre el RTOS (segundo entregable).
+ *
+ *  Tareas:
+ *    TaskSound   (prioridad 0): espera el semaforo y hace sonar el buzzer
+ *    TaskInput   (prioridad 1): lee potenciometros y boton cada 20 ms
+ *    TaskGame    (prioridad 2): mueve la pelota cada 25 ms
+ *    TaskDisplay (prioridad 3): dibuja el juego en la pantalla (LCD u OLED)
+ *
+ *  Sincronizacion / comunicacion entre tareas:
+ *    - Mutex:    protege el estado del juego compartido (GameMutex)
+ *    - Semaforo: avisa a la tarea de sonido que hay un evento (SoundSem)
  *
  *  Conexiones:
- *    1 VSS -> GND            9-10 D2-D3 -> sin conectar
- *    2 VDD -> 5V             11 D4 -> PB12
- *    3 V0  -> pata central   12 D5 -> PB13
- *            de un potenciometro (contraste)
- *    4 RS  -> PB10           13 D6 -> PB14
- *    5 RW  -> GND            14 D7 -> PB15
- *    6 E   -> PB11           15 VLED (A) -> 5V (con resistencia de 220 ohm)
- *    7-8 D0-D1 -> sin conectar   16 VLSS (K) -> GND
+ *    LCD 16x2 (por defecto): RS -> PB10, E -> PB11, D4..D7 -> PB12..PB15,
+ *      RW -> GND, VDD -> 5V (conexiones completas en Lcd1602.h)
+ *    OLED SSD1306 (opcional): SCL -> PB6, SDA -> PB7, VCC -> 3.3V, GND -> GND
+ *    Potenciometro J1 (pata central) -> PA0
+ *    Potenciometro J2 (pata central) -> PA1
+ *    Boton inicio/fin -> PB0 (el otro lado a GND)
+ *    Buzzer activo (+) -> PA8, (-) -> GND
  ***********************************************************/
 
 #include "AppTypes.h"
 
-#define LCD_COLUMNS 16
-#define LCD_ROWS 2
-#define LCD_CUSTOM_CHARS 8 /* caracteres que se pueden disenar (CGRAM) */
+void Pong_Init(void);
 
-void Lcd_Init(void);
-void Lcd_Clear(void);
-void Lcd_SetCursor(u8 Row, u8 Column);
-void Lcd_WriteChar(u8 Character);
-void Lcd_WriteString(const char *Text);
-void Lcd_CreateChar(u8 Slot, const u8 Rows[8]);
-
-#endif // _LCD1602_H_
+#endif // _PONG_H_
